@@ -21,7 +21,7 @@ from theano.tensor import tanh
 GPU = False
 if GPU:
     print("Trying to run under a GPU.")
-    try: theano.config.device = "gpu"
+    try: theano.config.device = "cuda"
     except: pass #it's already set
     theano.config.floatX = "float32"
 else:
@@ -108,8 +108,8 @@ class Network(object):
             t0 = time.time()
             for minibatch_index in range(num_training_batches):
                 iteration = num_training_batches*epoch+minibatch_index
-                '''if iteration % 1000 == 0:
-                    print(f"Training mini-batch number {iteration}")'''
+                if iteration % 1000 == 0:
+                    print(f"Training mini-batch number {iteration}")
                 train_mb(minibatch_index)
                 if (iteration+1) % num_training_batches == 0:
                     validation_accuracy = np.mean([validate_mb_accuracy(j) for j in range(num_validation_batches)])

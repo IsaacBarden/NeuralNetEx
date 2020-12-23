@@ -43,9 +43,6 @@ net = network.Network([784, 30, 10], cost = network.CrossEntropyCost())
 net.SGD(training_data, 30, 10, 0.1, lmbda = 5.0, evaluation_data=validation_data, monitor_evaluation_accuracy = True, early_stopping_n=10)
 '''
 
-import theano
-import numpy as np
-
 import DeepNetwork
 from DeepNetwork import Network, ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer, ReLU
 
@@ -75,4 +72,4 @@ net = Network([
 )
 
 
-net.SGD(training_data, 40, mini_batch_size, 0.03, validation_data, test_data, lmbda=0.1, early_stopping_n=10)
+net.SGD(training_data, 5, mini_batch_size, 0.03, validation_data, test_data, lmbda=0.1, early_stopping_n=10)
