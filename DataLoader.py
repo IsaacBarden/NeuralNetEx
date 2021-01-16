@@ -4,7 +4,7 @@ import numpy as np
 
 
 def load_data():
-    f = gzip.open('NeuralNetEx\\mnist.pkl.gz', 'rb')
+    f = gzip.open('NeuralNetEx\\mnist_expanded.pkl.gz', 'rb')
     training_data, validation_data, test_data = pickle.load(f, encoding="latin1")
     f.close()
     return (training_data, validation_data, test_data)
