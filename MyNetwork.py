@@ -64,7 +64,7 @@ class Net(nn.Module):
         return output
 
 
-def load_data(filename="NeuralNetEx\\mnist.pkl.gz", dataset="training", **kwargs):
+def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs):
     '''
     Partially pulled from DeepNetwork.py
 
@@ -73,26 +73,36 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", dataset="training", **kwargs
 
     Args:
 
-    filename: Location of dataset file.   
+        filename: Location of dataset file.   
 
-    dataset: Grabs that part of the dataset. Values = "training", "validation", "testing"
+        portion: Grabs that portion of the dataset. Values = "training", "validation", "testing"
 
-    batch_size: The batch size specified in run_nn.
+        **kwargs: The batch size specified in run_nn.
+
+    Returns:
+
+        The DatasetLoader for the given portion of the dataset
 
     NOTE: Torchvision includes the MNIST dataset, and can be more easily loaded from there.
     However, I'm loading it from an existing file for the purposes of learning. 
     '''
 
     f = gzip.open(filename)
-    if(dataset.lower() == "training"):
+    if(portion.lower() == "training"):
         data = pickle.load(f, encoding="latin1")[0]
         f.close()
+        #Load images as a 2d tensor of size [dataset size, 784]
         images_tensor = torch.Tensor(data[0])
+        #resize images into a 4d tensor of size [dataset size,1,28,28], for [dataset size, #channels, height, width]
         images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
+        #get correct labels of numbers
         image_numbers_tensor = torch.Tensor(data[1])
+        #combine into a dataset of tensors 
         MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
+        #use that dataset to create a dataloader with the arguments from run_nn()
         dataloader = DataLoader(MNISTset, **kwargs)
-    elif(dataset.lower() == "validation"):
+    elif(portion.lower() == "validation"):
+        #Same process as training
         data = pickle.load(f, encoding="latin1")[1]
         f.close()
         images_tensor = torch.Tensor(data[0])
@@ -100,7 +110,8 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", dataset="training", **kwargs
         image_numbers_tensor = torch.Tensor(data[1])
         MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
         dataloader = DataLoader(MNISTset, **kwargs)
-    elif(dataset.lower() == "testing"):
+    elif(portion.lower() == "testing"):
+        #Same process as training
         data = pickle.load(f, encoding="latin1")[2]
         f.close()
         images_tensor = torch.Tensor(data[0])
@@ -161,27 +172,27 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
 
     Args:
     
-    batch_size: batch size for training (default = 10)
+        batch_size: batch size for training (default = 10)
 
-    test_batch_size: batch size for testing (default = 1000)
+        test_batch_size: batch size for testing (default = 1000)
 
-    epochs: number of epoch to train the nn for (default = 60)
+        epochs: number of epoch to train the nn for (default = 60)
 
-    learning_rate: nn's learning rate (default = 1.0)
+        learning_rate: nn's learning rate (default = 1.0)
 
-    lmbda: L2 regularization, defined as weight_decay in pytorch's SGD (default = 0.1)
+        lmbda: L2 regularization, defined as weight_decay in pytorch's SGD (default = 0.1)
 
-    use_cuda: if True, use GPU. If False, use CPU (default = True)
+        use_cuda: if True, use GPU. If False, use CPU (default = True)
     
-    dry_run: Run through nn exactly once (default = False)
+        dry_run: Run through nn exactly once (default = False)
 
-    seed: nn parameter randomization seed (default = 1)
+        eed: nn parameter randomization seed (default = 1)
 
-    log_interval: Log progress every log_interval batches (default = 100)
+        log_interval: Log progress every log_interval batches (default = 100)
 
-    save_model: Saves nn to a file after training (default = False)
+        save_model: Saves nn to a file after training (default = False)
 
-    do_testing: If True, send nn through the testing set and log performance (default = True)
+        do_testing: If True, send nn through the testing set and log performance (default = True)
     '''
 
     #Make sure that cuda can be used before setting to device
