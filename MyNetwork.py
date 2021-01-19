@@ -95,8 +95,8 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs
         images_tensor = torch.Tensor(data[0])
         #resize images into a 4d tensor of size [dataset size,1,28,28], for [dataset size, #channels, height, width]
         images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
-        #get correct labels of numbers
-        image_numbers_tensor = torch.Tensor(data[1])
+        #get correct labels of numbers, as a long (important for computing loss)
+        image_numbers_tensor = torch.Tensor(data[1]).long()
         #combine into a dataset of tensors 
         MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
         #use that dataset to create a dataloader with the arguments from run_nn()
@@ -107,7 +107,7 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs
         f.close()
         images_tensor = torch.Tensor(data[0])
         images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
-        image_numbers_tensor = torch.Tensor(data[1])
+        image_numbers_tensor = torch.Tensor(data[1]).long()
         MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
         dataloader = DataLoader(MNISTset, **kwargs)
     elif(portion.lower() == "testing"):
@@ -116,7 +116,7 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs
         f.close()
         images_tensor = torch.Tensor(data[0])
         images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
-        image_numbers_tensor = torch.Tensor(data[1])
+        image_numbers_tensor = torch.Tensor(data[1]).long()
         MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
         dataloader = DataLoader(MNISTset, **kwargs)
     else:
@@ -211,9 +211,9 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
 
     torch.manual_seed(seed)
 
-    training_data = load_data(dataset="training", **train_kwargs)
+    training_data = load_data(portion="training", **train_kwargs)
     if do_testing:
-        testing_data = load_data(dataset="testing", **test_kwargs)
+        testing_data = load_data(portion="testing", **test_kwargs)
 
 
     model = Net().to(device)
