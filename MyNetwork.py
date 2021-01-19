@@ -164,9 +164,11 @@ def test(model, device, test_data):
 
     print(f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{dataset_length}, {correct_percentage:.2f}%\n")
 
+    return test_loss
+
 
 def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, lmbda=0.1,
-           use_cuda=True, dry_run=False, seed=1, log_interval=100, save_model=False, do_testing=True):
+           use_cuda=True, dry_run=False, seed=1, log_interval=100, save_model=False):
     '''
     Main function. Creates the neural network, applies the given arguments, trains, tests, saves.
 
@@ -191,8 +193,6 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
         log_interval: Log progress every log_interval batches (default = 100)
 
         save_model: Saves nn to a file after training (default = False)
-
-        do_testing: If True, send nn through the testing set and log performance (default = True)
     '''
 
     #Make sure that cuda can be used before setting to device
@@ -212,19 +212,17 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
     torch.manual_seed(seed)
 
     training_data = load_data(portion="training", **train_kwargs)
-    if do_testing:
-        testing_data = load_data(portion="testing", **test_kwargs)
+    testing_data = load_data(portion="testing", **test_kwargs)
 
 
     model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=lmbda)
-    scheduler = ReduceLROnPlateau(optimizer)
+    scheduler = ReduceLROnPlateau(optimizer, "min")
 
     for epoch in range(1, epochs+1):
         train(model, device, optimizer, epoch, training_data, log_interval, dry_run)
-        if do_testing:
-            test(model, device, testing_data)
-        scheduler.step()
+        test_loss = test(model, device, testing_data)
+        scheduler.step(metrics=test_loss)
 
     if save_model:
         torch.save(model.state_dict(), "PytorchMnistNetwork.pt")
