@@ -10,12 +10,13 @@
 import pickle
 import gzip
 
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader, TensorDataset
 
 
 class Net(nn.Module):
@@ -62,7 +63,8 @@ class Net(nn.Module):
 
         return output
 
-def load_data(filename="NeuralNetEx\\mnist_expanded.pkl.gz", dataset="training", **kwargs):
+
+def load_data(filename="NeuralNetEx\\mnist.pkl.gz", dataset="training", **kwargs):
     '''
     Partially pulled from DeepNetwork.py
 
@@ -83,15 +85,34 @@ def load_data(filename="NeuralNetEx\\mnist_expanded.pkl.gz", dataset="training",
 
     f = gzip.open(filename)
     if(dataset.lower() == "training"):
-        data = torch.utils.data.DataLoader(pickle.load(f, encoding="latin1")[0], **kwargs)
+        data = pickle.load(f, encoding="latin1")[0]
+        f.close()
+        images_tensor = torch.Tensor(data[0])
+        images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
+        image_numbers_tensor = torch.Tensor(data[1])
+        MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
+        dataloader = DataLoader(MNISTset, **kwargs)
     elif(dataset.lower() == "validation"):
-        data = torch.utils.data.DataLoader(pickle.load(f, encoding="latin1")[1], **kwargs)
+        data = pickle.load(f, encoding="latin1")[1]
+        f.close()
+        images_tensor = torch.Tensor(data[0])
+        images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
+        image_numbers_tensor = torch.Tensor(data[1])
+        MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
+        dataloader = DataLoader(MNISTset, **kwargs)
     elif(dataset.lower() == "testing"):
-        data = torch.utils.data.DataLoader(pickle.load(f, encoding="latin1")[2], **kwargs)
+        data = pickle.load(f, encoding="latin1")[2]
+        f.close()
+        images_tensor = torch.Tensor(data[0])
+        images_tensor = torch.reshape(images_tensor, (len(images_tensor), 1, 28, 28))
+        image_numbers_tensor = torch.Tensor(data[1])
+        MNISTset = TensorDataset(images_tensor, image_numbers_tensor)
+        dataloader = DataLoader(MNISTset, **kwargs)
     else:
+        f.close()
         raise ValueError("Invalid dataset name")
-    f.close()
-    return data
+    return dataloader
+
 
 def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
     model.train()
@@ -110,6 +131,7 @@ def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
             print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f})]\tLoss: {loss.item():.4f}")
             if dry_run:
                 break
+
 
 def test(model, device, test_data):
     device = torch.device("cpu")
@@ -177,12 +199,6 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
         test_kwargs.update(cuda_kwargs)
 
     torch.manual_seed(seed)
-
-
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        ])
 
     training_data = load_data(dataset="training", **train_kwargs)
     if do_testing:
