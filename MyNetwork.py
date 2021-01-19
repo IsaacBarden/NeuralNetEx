@@ -127,6 +127,7 @@ def load_data(filepath="NeuralNetEx\\mnist_expanded.pkl.gz", portion="training",
 
 def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
     model.train()
+    running_loss = 0.0
     for batch_idx, (data, target) in enumerate(train_data):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
@@ -134,19 +135,21 @@ def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
         loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
+        running_loss += loss.item()
 
-        batch_count = batch_idx * len(data)
-        data_length = len(train_data.dataset)
-        processed_percent = 100. * batch_idx / len(train_data)
-        if batch_idx % log_interval == 0:
-            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f}%)]\tLoss: {loss.item():.4f}")
+        if batch_idx % log_interval == 0 and batch_idx != 0:
+            batch_count = batch_idx * len(data)
+            data_length = len(train_data.dataset)
+            processed_percent = 100. * batch_idx / len(train_data)
+            avg_loss = running_loss / log_interval
+            running_loss = 0.0
+
+            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f}%)]\tAvg loss: {avg_loss:.4f}")
             if dry_run:
                 break
 
 
 def test(model, device, test_data):
-    device = torch.device("cpu")
-    model = Net().to(device)
     model.eval()
     test_loss = 0
     correct = 0
@@ -182,7 +185,7 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
 
         learning_rate: nn's learning rate (default = 1.0)
 
-        lmbda: L2 regularization, defined as weight_decay in pytorch's SGD (default = 0.1)
+        lmbda: parameter used in L2 regularization (default=0.1)
 
         use_cuda: if True, use GPU. If False, use CPU (default = True)
     
@@ -219,16 +222,17 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
 
 
     model = Net().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=lmbda)
-    #scheduler = ReduceLROnPlateau(optimizer, "min")
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=lmbda/(2*len(training_data.dataset)))
+    scheduler = ReduceLROnPlateau(optimizer, "min")
 
+    print("Starting training...")
     for epoch in range(1, epochs+1):
         train(model, device, optimizer, epoch, training_data, log_interval, dry_run)
         test_loss = test(model, device, testing_data)
-        #scheduler.step(metrics=test_loss)
+        scheduler.step(metrics=test_loss)
 
     if save_model:
         torch.save(model.state_dict(), "PytorchMnistNetwork.pt")
 
 if __name__ == '__main__':
-    run_nn(epochs=1, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz")
+    run_nn(epochs=1, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz", log_interval=1000)
