@@ -130,7 +130,8 @@ def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
     running_loss = 0.0
     for batch_idx, (data, target) in enumerate(train_data):
         data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
+        for param in model.parameters():
+            param.grad = None
         output = model(data)
         loss = F.cross_entropy(output, target)
         loss.backward()
@@ -144,7 +145,7 @@ def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
             avg_loss = running_loss / log_interval
             running_loss = 0.0
 
-            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f}%)]\tAvg loss: {avg_loss:.4f}")
+            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f}%)]\tAvg loss: {avg_loss:.3f}")
             if dry_run:
                 break
 
@@ -214,6 +215,7 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
                        'pin_memory': True}
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
+        torch.backends.cudnn.benchmark = True
 
     torch.manual_seed(seed)
 
@@ -232,7 +234,7 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
         scheduler.step(metrics=test_loss)
 
     if save_model:
-        torch.save(model.state_dict(), "PytorchMnistNetwork.pt")
+        torch.save(model.state_dict(), "NeuralNetEx\\PytorchMnistNetwork.pt")
 
 if __name__ == '__main__':
-    run_nn(epochs=5, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz", log_interval=1000)
+    run_nn(log_interval=5000, save_model=True)
