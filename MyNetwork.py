@@ -64,7 +64,7 @@ class Net(nn.Module):
         return output
 
 
-def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs):
+def load_data(filepath="NeuralNetEx\\mnist_expanded.pkl.gz", portion="training", **kwargs):
     '''
     Partially pulled from DeepNetwork.py
 
@@ -87,7 +87,7 @@ def load_data(filename="NeuralNetEx\\mnist.pkl.gz", portion="training", **kwargs
     However, I'm loading it from an existing file for the purposes of learning. 
     '''
 
-    f = gzip.open(filename)
+    f = gzip.open(filepath)
     if(portion.lower() == "training"):
         data = pickle.load(f, encoding="latin1")[0]
         f.close()
@@ -135,11 +135,11 @@ def train(model, device, optimizer, epoch, train_data, log_interval, dry_run):
         loss.backward()
         optimizer.step()
 
-        batch_count = batch_idx = len(data)
+        batch_count = batch_idx * len(data)
         data_length = len(train_data.dataset)
         processed_percent = 100. * batch_idx / len(train_data)
         if batch_idx % log_interval == 0:
-            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f})]\tLoss: {loss.item():.4f}")
+            print(f"~Training~ Epoch {epoch}: [{batch_count}/{data_length} ({processed_percent:.0f}%)]\tLoss: {loss.item():.4f}")
             if dry_run:
                 break
 
@@ -162,13 +162,13 @@ def test(model, device, test_data):
     dataset_length = len(test_data.dataset)
     correct_percentage = 100. * correct / dataset_length
 
-    print(f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{dataset_length}, {correct_percentage:.2f}%\n")
+    print(f"\n~Testing~ Average loss: {test_loss:.4f}, Accuracy: {correct}/{dataset_length} ({correct_percentage:.2f}%)\n")
 
     return test_loss
 
 
 def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, lmbda=0.1,
-           use_cuda=True, dry_run=False, seed=1, log_interval=100, save_model=False):
+           use_cuda=True, dry_run=False, seed=1, log_interval=100, save_model=False, filepath="NeuralNetEx\\mnist_expanded.pkl.gz"):
     '''
     Main function. Creates the neural network, applies the given arguments, trains, tests, saves.
 
@@ -193,39 +193,42 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
         log_interval: Log progress every log_interval batches (default = 100)
 
         save_model: Saves nn to a file after training (default = False)
+
+        filename: Grabs dataset from the given filepath
     '''
 
     #Make sure that cuda can be used before setting to device
     #use_cuda = use_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
     
-    train_kwargs = {'batch_size': batch_size}
-    test_kwargs = {'batch_size': test_batch_size}
+    train_kwargs = {'batch_size': batch_size,
+                    "shuffle": True}
+    test_kwargs = {'batch_size': test_batch_size,
+                   'shuffle': False}
     #If using CUDA, optimize data loading. more info at https://pytorch.org/docs/stable/data.html
     if use_cuda:
         cuda_kwargs = {'num_workers': 1,
-                       'pin_memory': True,
-                       'shuffle': True}
+                       'pin_memory': True}
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
 
     torch.manual_seed(seed)
 
-    training_data = load_data(portion="training", **train_kwargs)
-    testing_data = load_data(portion="testing", **test_kwargs)
+    training_data = load_data(filepath=filepath, portion="training", **train_kwargs)
+    testing_data = load_data(filepath=filepath, portion="testing", **test_kwargs)
 
 
     model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=lmbda)
-    scheduler = ReduceLROnPlateau(optimizer, "min")
+    #scheduler = ReduceLROnPlateau(optimizer, "min")
 
     for epoch in range(1, epochs+1):
         train(model, device, optimizer, epoch, training_data, log_interval, dry_run)
         test_loss = test(model, device, testing_data)
-        scheduler.step(metrics=test_loss)
+        #scheduler.step(metrics=test_loss)
 
     if save_model:
         torch.save(model.state_dict(), "PytorchMnistNetwork.pt")
 
 if __name__ == '__main__':
-    run_nn(epochs=5, use_cuda = False)
+    run_nn(epochs=1, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz")
