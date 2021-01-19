@@ -171,7 +171,7 @@ def test(model, device, test_data):
 
 
 def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, lmbda=0.1,
-           use_cuda=True, dry_run=False, seed=1, log_interval=100, save_model=False, filepath="NeuralNetEx\\mnist_expanded.pkl.gz"):
+           use_cuda=True, dry_run=False, seed=1, log_interval=1000, save_model=False, filepath="NeuralNetEx\\mnist_expanded.pkl.gz"):
     '''
     Main function. Creates the neural network, applies the given arguments, trains, tests, saves.
 
@@ -193,7 +193,7 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
 
         eed: nn parameter randomization seed (default = 1)
 
-        log_interval: Log progress every log_interval batches (default = 100)
+        log_interval: Log progress every log_interval batches (default = 1000)
 
         save_model: Saves nn to a file after training (default = False)
 
@@ -235,4 +235,4 @@ def run_nn(batch_size=10, test_batch_size=1000, epochs=60, learning_rate=0.03, l
         torch.save(model.state_dict(), "PytorchMnistNetwork.pt")
 
 if __name__ == '__main__':
-    run_nn(epochs=1, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz", log_interval=1000)
+    run_nn(epochs=5, use_cuda = False, filepath="NeuralNetEx\\mnist.pkl.gz", log_interval=1000)
